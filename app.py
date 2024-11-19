@@ -1,7 +1,7 @@
 import base64
 import datetime
 import time
-from tkinter import Tk
+
 from pymongo import MongoClient
 import streamlit as st
 import plotly.express as px
@@ -12,6 +12,29 @@ from streamlit_option_menu import option_menu
 import streamlit.components.v1 as components
 import os
 from dotenv import load_dotenv
+import logging
+import sys
+from affirmation_widget import display_affirmation_widget
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+)
+logging.info("Application started.")
+
+def global_error_handler(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        # Call the default handler for KeyboardInterrupt
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logging.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+# Set the global error handler
+sys.excepthook = global_error_handler
+
 #AI Integration
 import anthropic
 import datetime
@@ -41,8 +64,63 @@ scroll_to_top = """
     </style>
 """
 
+import streamlit as st
+import random
+import time
+# Adding tabs for different sections of the app
+tabs = st.tabs(["Home", "Guided Meditation", "Breathing Exercises", "Monitoring (Beta)"])
+# Code for the Monitoring (Beta) tab
+import streamlit as st
+import random
+import time
 
+# Add navigation options in sidebar
+selected_tab = st.sidebar.selectbox("Choose a tab", ["Home", "Monitoring (Beta)", "Other Tabs"])
 
+if selected_tab == "Monitoring (Beta)":
+    st.title("Monitoring (Beta)")
+    st.subheader("Connect Your Heart Rate and Stress Monitoring Device")
+
+    # Connection instructions
+    st.markdown("""
+    To connect your device, please follow these steps:
+    
+    1. **Enable Bluetooth** on your heart rate monitoring device and the device running this app.
+    2. **Select Your Device** from the dropdown below and click **Connect**.
+    3. Once connected, your heart rate and stress levels will appear in real-time.
+    """)
+
+    # Simulated dropdown to select a device (for demonstration purposes)
+    device_name = st.selectbox("Select Monitoring Device", ["Device 1", "Device 2", "Device 3"])
+
+    # Simulate a connect button
+    if st.button("Connect"):
+        st.success(f"Connected to {device_name}!")
+        
+        # Display placeholders for real-time data
+        heart_rate_display = st.empty()
+        stress_level_display = st.empty()
+        status_display = st.empty()
+
+        def simulate_data():
+            """Simulate heart rate and stress level data"""
+            heart_rate = random.randint(60, 100)
+            stress_level = random.randint(1, 10)
+            return heart_rate, stress_level
+
+        # Real-time update loop
+        status_display.write("Monitoring real-time data...")
+        
+        for _ in range(100):  # Use a finite range instead of while True for demonstration
+            # Simulate or fetch data
+            heart_rate, stress_level = simulate_data()
+
+            # Display the data in real-time
+            heart_rate_display.metric("Heart Rate", f"{heart_rate} BPM")
+            stress_level_display.metric("Stress Level", f"{stress_level}/10")
+
+            # Refresh data every second
+            time.sleep(1)
 #Changes made by --Charvi Arora 
 #Added security
 # Load environment variables from .env file
@@ -92,10 +170,19 @@ df = px.data.tips()  # Use your actual anxiety relief data
 
 @st.cache_data
 def get_img_as_base64(file):
-    with open(file, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
+    logging.info(f"Entering get_img_as_base64 with file: {file}")
+    try:
+        with open(file, "rb") as f:
+            data = f.read()
+        encoded_data = base64.b64encode(data).decode()
+        logging.info(f"Successfully encoded file: {file}")
+        return encoded_data
+    except Exception as e:
+        logging.error(f"Error in get_img_as_base64 with file {file}: {e}")
+        raise
+    finally:
+        logging.info(f"Exiting get_img_as_base64 with file: {file}")
+        
 # Animated background
 page_bg_img = f"""
 <style>
@@ -143,8 +230,11 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 
 
 def load_lottie_url(url: str):
-    response = requests.get(url)
-    if response.status_code == 200:
+    logging.info(f"Fetching Lottie animation from URL: {url}")
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        logging.info(f"Successfully fetched Lottie animation from URL: {url}")
         return response.json()
     return None
 def show_blog():
@@ -186,6 +276,111 @@ def show_blog():
     st.subheader("Comments")
     st.write("No comments yet. Be the first to share your thoughts!")
 
+#Footer Function to show footer and bottom nav
+def show_footer():
+    st.write("---")
+    
+    # Define the HTML for the footer
+    footer_html = """
+    <style>
+        .footer {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .social-icons {
+            margin-top: 5px; /* Space above icons */
+        }
+        .social-icons a {
+            margin: 0 10px; /* Spacing between icons */
+            color: #333; /* Icon color */
+            text-decoration: none; /* Remove underline from links */
+            font-size: 20px; /* Icon size */
+        }
+        .social-icons a:hover {
+            color: #007bff; /* Change color on hover */
+        }
+        .footer-links {
+            margin-top: 10px;
+            font-size: 14px; /* Link font size */
+        }
+        .footer-links a {
+            margin: 0 15px; /* Space between links */
+            color: #333;
+            text-decoration: none;
+        }
+        .footer-links a:hover {
+            text-decoration: underline; /* Underline on hover */
+        }
+        .newsletter {
+            margin-top: 10px;
+        }
+        .newsletter input {
+            padding: 5px;
+            font-size: 14px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid #000;
+        }
+        .newsletter button {
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid #000;
+        }
+        .newsletter button:hover {
+            background-color: rgba(0, 123, 255, 0.3); 
+        }
+    </style>
+    
+    <!-- Load Font Awesome from CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <div class="footer">
+        <p>© 2024 SereniFi. All rights reserved.</p>
+        <div class="social-icons">
+            <a href="https://www.linkedin.com/in/amna-hassan-143b76202/" target="_blank">
+                <i class="fab fa-linkedin" title="LinkedIn"></i>
+            </a>
+            <a href="https://github.com/Amna-Hassan04/Serenity-Guide" target="_blank">
+                <i class="fab fa-github" title="GitHub"></i>
+            </a>
+            <a href="https://www.facebook.com" target="_blank">
+                <i class="fab fa-facebook" title="Facebook"></i>
+            </a>
+            <a href="https://www.twitter.com" target="_blank">
+                <i class="fab fa-twitter" title="Twitter"></i>
+            </a>
+            <a href="https://www.instagram.com" target="_blank">
+                <i class="fab fa-instagram" title="Instagram"></i>
+            </a>
+        </div>
+        <div class="footer-links">
+            <a class = "foot-links" href="#" target="_blank">Terms and Conditions</a>
+            <a class = "foot-links" href="#" target="_blank">Privacy Policy</a>
+            <a class = "foot-links" href="#" target="_blank">About Us</a>
+            <a class = "foot-links" href="#" target="_blank">Contact Us</a>
+        </div>
+        <div class = "Acknowledgements">
+            <p>Hackathon Project created by Amna Hassan, Anushka Pote, Madhuri K, Pearl Vashistha. <br>
+            Maintained and Features added by Contributors. 
+            </p>
+        </div>
+    </div>
+    """
+    
+    # Render the HTML in the footer
+    st.markdown(footer_html, unsafe_allow_html=True)
+
+    except requests.RequestException as e:
+        logging.error(f"Error fetching Lottie animation from URL {url}: {e}")
+        st.error("Failed to fetch Lottie animation. Please try again later.")
+        return None
+    
 # Main function to control page navigation
 def main():
     def show_blog():
@@ -228,8 +423,10 @@ def main():
     st.write("No comments yet. Be the first to share your thoughts!")
     selected = option_menu(
         menu_title=None,
-        options=["Home", "Calm Space", "Resources", "About & Feedback"],  # Added "Resources"
-        icons=["house-door-fill", "cloud-sun-fill", "book-fill", "chat-dots-fill"],  # Changed icon for "Resources"
+
+        options=["Home", "Calm Space", "About & Feedback","FAQs"],
+        icons=["house-door-fill", "cloud-sun-fill", "chat-dots-fill","question-circle-fill"],
+
         menu_icon="sun",
         default_index=0,
         orientation="horizontal",
@@ -268,6 +465,8 @@ def main():
         show_resources()  # Call the new function
     elif selected == "About & Feedback":
         show_about_and_feedback()
+    elif selected == "FAQs":
+        show_FAQs_page()
 
 
 def show_main_page():
@@ -377,9 +576,15 @@ def show_main_page():
     #|------MongoDb for Quick Tips For Mental Health Section for inserting and retreiving the tips------|
     #Setting MongoDb connection
     mongodb_uri = os.getenv("MONGODB_URI")
-    client=MongoClient(mongodb_uri)
-    db = client['serenity_guide_db']
-    tips_collection = db['mental_health_tips']
+    logging.info("Attempting to connect to MongoDB")
+    try:
+        client = MongoClient(mongodb_uri)
+        db = client['serenity_guide_db']
+        tips_collection = db['mental_health_tips']
+        logging.info("Successfully connected to MongoDB and accessed the 'serenity_guide_db' database and 'mental_health_tips' collection")
+    except Exception as e:
+        logging.error(f"Error connecting to MongoDB: {e}")
+        raise
 
     # Uncomment the following line to populate the database with tips in the format below:
     # tips = []
@@ -387,14 +592,24 @@ def show_main_page():
 
 
     st.subheader("Quick Tip for Mental Health")
-    all_tips = [] 
+    logging.info("Rendering 'Quick Tip for Mental Health' subheader")
+
+    all_tips = []
     if st.button("Get a Tip"):
-        all_tips = list(tips_collection.find({}, {"_id": 0, "tip": 1}))
-    
+        logging.info("'Get a Tip' button clicked")
+        try:
+            all_tips = list(tips_collection.find({}, {"_id": 0, "tip": 1}))
+            logging.info(f"Retrieved {len(all_tips)} tips from the database")
+        except Exception as e:
+            logging.error(f"Error retrieving tips from the database: {e}")
+            st.error("Failed to retrieve tips. Please try again later.")
+        
         if all_tips:
             random_tip = random.choice(all_tips)
+            logging.info(f"Displaying random tip: {random_tip['tip']}")
             st.write(f"Tip: {random_tip['tip']}")
         else:
+            logging.info("No tips available in the database")
             st.write("No tips available.")
             st.write(f"Tip: {random.choice(tips)}")
     #!--------------------------------------------------------------------------------------------------|
@@ -463,8 +678,7 @@ def show_main_page():
         fig_selected = px.bar(selected_data, x='Activity', y='Calmness_Level', title="Selected Activities Effectiveness")
         st.plotly_chart(fig_selected)
 
-    st.write("---")
-    st.markdown('<p style="text-align: center;">© 2024 SereniFi. All rights reserved.</p>', unsafe_allow_html=True)
+    show_footer()
 
 #adding spotify playlist feature
 def spotifyPlaylist():
@@ -616,14 +830,25 @@ def spotifyPlaylist():
     </script>
     """
 
+    logging.info("Displaying podcast collection description")
     st.write("Explore our collection of insightful podcasts that empower you with expert advice, inspiring stories, and practical tools to enhance your mental well-being.")
-    # Display the HTML component in Streamlit
-    components.html(spotify_html_podcasts, height=415)
 
+    try:
+        logging.info("Displaying Spotify podcasts HTML component")
+        components.html(spotify_html_podcasts, height=415)
+    except Exception as e:
+        logging.error(f"Error displaying Spotify podcasts HTML component: {e}")
+        st.error("Failed to load podcasts. Please try again later.")
+
+    logging.info("Displaying music playlist description")
     st.write("Dive into our curated playlists featuring calming and therapeutic music designed to soothe your mind and uplift your spirit, creating a harmonious backdrop for your mental health journey.")
-    # Display the HTML component in Streamlit
-    components.html(spotify_html_songs, height=415)
 
+    try:
+        logging.info("Displaying Spotify songs HTML component")
+        components.html(spotify_html_songs, height=415)
+    except Exception as e:
+        logging.error(f"Error displaying Spotify songs HTML component: {e}")
+        st.error("Failed to load music playlists. Please try again later.")
 
 def soothing_sounds():
     st.subheader("🎵 Calm Down with Soothing Sounds")
@@ -647,28 +872,50 @@ def soothing_sounds():
         loopcheckbox = st.checkbox("Loop Sound")
 
     if playbutton:
-        # Rendering the audio player and JS in the app
-        with col3:
-            st.audio(sound_options[selected_sound], format="audio/mp3", loop=loopcheckbox)
-    
-    spotifyPlaylist()
+        logging.info("Play button clicked")
+        try:
+            # Rendering the audio player and JS in the app
+            with col3:
+                logging.info(f"Playing sound: {selected_sound}")
+                st.audio(sound_options[selected_sound], format="audio/mp3", loop=loopcheckbox)
+        except Exception as e:
+            logging.error(f"Error playing sound: {selected_sound}, Error: {e}")
+            st.error("Failed to play the selected sound. Please try again later.")
+
+    try:
+        logging.info("Displaying Spotify playlist")
+        spotifyPlaylist()
+    except Exception as e:
+        logging.error(f"Error displaying Spotify playlist: {e}")
+        st.error("Failed to load Spotify playlist. Please try again later.")
 
 def interactive_journal():
+    logging.info("Rendering interactive journal")
+
     if 'journal_entries' not in st.session_state:
+        logging.info("Initializing journal_entries in session state")
         st.session_state.journal_entries = []
 
     journal_input = st.text_area("📝 Daily Journal", placeholder="Write down your thoughts...")
     if st.button("Save Entry"):
-        st.session_state.journal_entries.append({
-            "date": datetime.datetime.now(),
-            "entry": journal_input
-        })
-        st.success("Journal entry saved!")
+        logging.info("Save Entry button clicked")
+        try:
+            st.session_state.journal_entries.append({
+                "date": datetime.datetime.now(),
+                "entry": journal_input
+            })
+            logging.info("Journal entry saved")
+            st.success("Journal entry saved!")
+        except Exception as e:
+            logging.error(f"Error saving journal entry: {e}")
+            st.error("Failed to save journal entry. Please try again later.")
 
     # Display past journal entries
     if st.checkbox("Show Past Entries"):
+        logging.info("Show Past Entries checkbox selected")
         st.write("### Past Journal Entries:")
         for entry in st.session_state.journal_entries:
+            logging.info(f"Displaying journal entry from {entry['date'].strftime('%Y-%m-%d %H:%M:%S')}")
             st.write(f"**{entry['date'].strftime('%Y-%m-%d %H:%M:%S')}**: {entry['entry']}")
 
 def mood_boosting_mini_games():
@@ -706,7 +953,7 @@ def mood_boosting_mini_games():
     # Apply the button style to the Streamlit app
     st.markdown(button_style, unsafe_allow_html=True)
 
-    # Create a table with 12 game buttons, 4 columns and 3 rows
+    # Create a table with multiple game buttons
     st.markdown('''
         <table>
             <tr>
@@ -728,12 +975,82 @@ def mood_boosting_mini_games():
                 <td><a href="https://krunker.io/" target="_blank"><div class="button">Play Krunker.io</div></a></td>
             </tr>
         </table>
+        <br>
     ''', unsafe_allow_html=True)
 
+#Simon Game Challenge
+
+def simon_game_challenge():
+    st.markdown("## Simon Game Challenge")
+
+    # Description, Instructions, and Play Game button in a table format
+    st.markdown("""
+    <style>
+        .game-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .game-table th, .game-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .game-table th {
+            font-weight: bold;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            background-color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: black ;
+            font-color: red;
+        }
+    </style>
+
+    <table class="game-table">
+        <tr>
+            <th>Description</th>
+            <th>Instructions</th>
+            <th>Play Game</th>
+        </tr>
+        <tr>
+            <td>
+                The Simon Game Challenge tests your memory and focus as you follow an
+                increasingly complex sequence of flashing colors and sounds. 
+                Each level adds a new step to the pattern, which you must repeat perfectly to advance. 
+                One mistake ends the game.
+            </td>
+            <td>
+                <ul>
+                    <li><b>Press any key</b> on your keyboard to start the game.</li>
+                    <li>Watch as <b>one block will light up</b> or make a sound. Click that block to match the sequence.</li>
+                    <li>The sequence will get longer with each level. Follow it correctly to advance.</li>
+                    <li>If you make a mistake, the game will end, and your <b>final score</b> will display.</li>
+                </ul>
+            </td>
+            <td style="text-align: center;">
+                <a href="https://sanyadureja.github.io/Simon-Game-JavaScript-jQuery/" target="_blank" class="button">
+                    Simon Game Challenge
+                </a>
+            </td>
+        </tr>
+    </table>
+    """, unsafe_allow_html=True)
 
 def show_calm_space():
     st.title("Calm Space")
     st.write("Engage in a breathing exercise to calm your mind.")
+
+    st.subheader("Daily Affirmations")
+    display_affirmation_widget()
     
     st.subheader("Quick Tips for Positivity")
     quick_tips = [
@@ -759,6 +1076,7 @@ def show_calm_space():
     selected_challenge = st.selectbox("Choose an activity for your daily challenge:", options=list(challenges.keys()))
 
     if selected_challenge:
+        logging.info(f"Challenge started: {selected_challenge}")
         st.write(f"**Today's Challenge:** {challenges[selected_challenge]}")
         st.write("Remember, consistency is key to building habits and improving your mental well-being.")
 
@@ -792,15 +1110,22 @@ def show_calm_space():
     recent_events = st.text_area("Recent Events", placeholder="Describe any recent events that may have contributed to your anxiety or stress...")
 
     if st.button("Submit"):
+        logging.info("Mood form submitted")
         st.write("Thank you for sharing. Let’s find some exercises to help you.")
         guidance = anxiety_management_guide(mood, feeling_description, current_stress_level, recent_events)
         st.write(guidance)
     
-    st.subheader("Mood-Boosting Mini Games")
-    st.write("Take a break and play a mini-game to reduce your anxiety.")
-    if st.button("Start Game"):
+    st.subheader("Mood-Boosting Games")
+    st.write("Take a break and play games to reduce your anxiety.")
+    if st.button("Start Mini Games"):
+        logging.info("Mood boosting game started")
         st.write("Launching a quick mood-boosting game...")
         mood_boosting_mini_games()
+
+    #Simon Game Challenge Button
+    if st.button("Simon Game Challenge"):
+        logging.info("Simon game challenge started")
+        simon_game_challenge()
 
     st.write("---")
     soothing_sounds()
@@ -812,12 +1137,7 @@ def show_calm_space():
         st.success("Journal entry: It's important to reflect and release your emotions.")
         interactive_journal()
 
-
-
-    st.write("---")
-    st.markdown('<p style="text-align: center;">© 2024 SereniFi. All rights reserved.</p>', unsafe_allow_html=True)
-
-
+    show_footer()
 
 
 def show_about_and_feedback():
@@ -856,9 +1176,14 @@ def show_about_and_feedback():
 
     feedback_activity = st.text_area("How have the activities helped you? Share your experience here:")
     if st.button("Submit Feedback"):
+        logging.info("'Submit Feedback' button clicked")
         if feedback_activity:
+            logging.info("Feedback activity provided")
             st.success("Thank you for sharing your experience! Your feedback is valuable and appreciated.")
-    
+        else:
+            logging.info("No feedback activity provided")
+            st.warning("Please provide feedback before submitting.")   
+
     st.write("---")
     
     # Our Advertising Partners
@@ -893,14 +1218,21 @@ def show_about_and_feedback():
     # Subscribe for Updates
     st.subheader("Subscribe for Updates")
     st.write("Stay updated with our latest features, activities, and wellness tips.")
+
     email = st.text_input("Enter your email address:")
     if st.button("Subscribe"):
+        logging.info("'Subscribe' button clicked")
         if email:
+            logging.info(f"Subscription email provided: {email}")
             st.success("Thank you for subscribing! You'll receive updates and tips directly to your inbox.")
+
     
+        else:
+            logging.info("No email provided for subscription")
+            st.warning("Please enter your email address to subscribe.")
+
     st.write("---")
-    st.markdown('<p style="text-align: center;">© 2024 SereniFi. All rights reserved.</p>', unsafe_allow_html=True)
-    
+    st.markdown('<p style="text-align: center;">© 2024 SereniFi. All rights reserved.</p>', unsafe_allow_html=True)    
 
 import streamlit as st
 
@@ -927,10 +1259,16 @@ def show_resources():
         submit_button = st.form_submit_button(label='Add Activity')
 
         if submit_button:
-            # Append the activity to the session state
-            st.session_state.activities.append((activity, duration, frequency))
-            st.success(f"Added '{activity}' for {duration} minutes {frequency}!")
-
+            logging.info("Submit button clicked")
+            try:
+                # Append the activity to the session state
+                st.session_state.activities.append((activity, duration, frequency))
+                logging.info(f"Added activity: {activity}, duration: {duration}, frequency: {frequency}")
+                st.success(f"Added '{activity}' for {duration} minutes {frequency}!")
+            except Exception as e:
+                logging.error(f"Error adding activity: {e}")
+                st.error("Failed to add activity. Please try again later.")
+                
     # Mental Health Articles
     st.header("Mental Health Articles")
 
@@ -969,6 +1307,7 @@ def show_resources():
             '<img src="https://files.oaiusercontent.com/file-oSz9p3oO0nr9Kl34h6M02W7h?se=2024-10-15T10%3A01%3A31Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D604800%2C%20immutable%2C%20private&rscd=attachment%3B%20filename%3D42222272-d7ea-487d-84ee-7a5b57eefca4.webp&sig=8SCuBVJkYA2c5CGjynpFlkchayZ5L2PIrdwGVkXEO84%3D" width="100%" />'
             '</a>', unsafe_allow_html=True
         )
+
 
     # Self-Care Tips
     st.header("Self-Care Tips")
@@ -1032,6 +1371,7 @@ def show_resources():
     # Podcast/Audio Library
     st.header("Podcast/Audio Library")
 
+
     # Add custom CSS for hover effect
     st.markdown("""
         <style>
@@ -1070,6 +1410,98 @@ def show_resources():
             '<img src="https://i.scdn.co/image/ab6765630000ba8ac3cc83aee70191fa17f56934" width="100%" />'
             '</a>', unsafe_allow_html=True
         )
+def show_FAQs_page():
+    st.title("Frequently Asked Questions (FAQs)")
+    
+    st.markdown("""
+    <style>
+    .faq-question {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333333;
+        margin-bottom: 10px;
+    }
+    .faq-answer {
+        font-size: 16px;
+        color: #555555;
+        line-height: 1.6;
+    }
+    .faq-header {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2C3E50;
+    }
+    .additional-questions {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2C3E50;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="faq-header">Welcome to the SereniFi FAQ Section!</div>', unsafe_allow_html=True)
+    st.write("""
+    Here you'll find answers to some of the most common questions about our platform, services, and how to make the most of your experience.
+    """)
+
+    st.write("---")
+
+    with st.expander("1. What is SereniFi?"):
+        st.markdown('<div class="faq-question">What is SereniFi?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">SereniFi is a mental wellness platform dedicated to promoting mental well-being through interactive tools and resources. Our goal is to help individuals manage anxiety, stress, and improve their overall mental health.</div>', unsafe_allow_html=True)
+
+    with st.expander("2. How can SereniFi help with anxiety?"):
+        st.markdown('<div class="faq-question">How can SereniFi help with anxiety?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">SereniFi offers a variety of activities, guided meditations, relaxation techniques, and resources designed to reduce stress and anxiety. We also provide tools to track your progress and find what works best for you.</div>', unsafe_allow_html=True)
+
+    with st.expander("3. Is SereniFi free to use?"):
+        st.markdown('<div class="faq-question">Is SereniFi free to use?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">Yes, SereniFi offers free access to most of its tools and resources. Some premium features might require a subscription, but we ensure that the essential tools for mental wellness are always available to everyone at no cost.</div>', unsafe_allow_html=True)
+
+    with st.expander("4. Can I use SereniFi on my mobile device?"):
+        st.markdown('<div class="faq-question">Can I use SereniFi on my mobile device?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">Absolutely! SereniFi is designed to be mobile-friendly, so you can access all features and resources from your smartphone or tablet, no matter where you are.</div>', unsafe_allow_html=True)
+
+    with st.expander("5. How do I provide feedback or get support?"):
+        st.markdown('<div class="faq-question">How do I provide feedback or get support?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">We value your feedback and encourage you to share your thoughts. You can visit our \'About Us & Feedback\' page to submit your feedback or email us directly at <a href="mailto:info@anxietyrelief.com">info@anxietyrelief.com</a>.</div>', unsafe_allow_html=True)
+
+    with st.expander("6. Is my data safe with SereniFi?"):
+        st.markdown('<div class="faq-question">Is my data safe with SereniFi?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">Your privacy is our top priority. We use state-of-the-art encryption and data protection measures to ensure that your information remains safe and confidential.</div>', unsafe_allow_html=True)
+
+    with st.expander("7. Can I customize my wellness plan on SereniFi?"):
+        st.markdown('<div class="faq-question">Can I customize my wellness plan on SereniFi?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">Yes, you can tailor your wellness activities and resources according to your needs and preferences. SereniFi allows you to choose the techniques and exercises that work best for you.</div>', unsafe_allow_html=True)
+
+    with st.expander("8. How do I join the SereniFi community?"):
+        st.markdown('<div class="faq-question">How do I join the SereniFi community?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">You can join the SereniFi community by signing up on our platform. You\'ll gain access to support groups, forums, and events where you can connect with others on their mental wellness journey.</div>', unsafe_allow_html=True)
+
+    with st.expander("9. What types of mental health professionals contribute to SereniFi?"):
+        st.markdown('<div class="faq-question">What types of mental health professionals contribute to SereniFi?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">Our platform is supported by a diverse team of mental health professionals, including psychologists, wellness coaches, and therapists, who provide insights and guidance on our resources and tools.</div>', unsafe_allow_html=True)
+
+    with st.expander("10. Are the activities on SereniFi backed by scientific research?"):
+        st.markdown('<div class="faq-question">Are the activities on SereniFi backed by scientific research?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="faq-answer">Yes, our activities and techniques are grounded in evidence-based practices. We aim to provide methods that are scientifically proven to reduce anxiety and improve mental wellness.</div>', unsafe_allow_html=True)
+
+    st.write("---")
+
+    st.markdown('<div class="additional-questions">Have More Questions?</div>', unsafe_allow_html=True)
+    st.write("""
+    If you have any other questions that aren't listed here, feel free to reach out to us at [info@anxietyrelief.com](mailto:info@anxietyrelief.com). We're here to help you get the most out of SereniFi!!
+    """)
+
+    st.write("---")
+    st.markdown('<p style="text-align: center; font-size: 14px; color: #888888;">© 2024 SereniFi. All rights reserved.</p>', unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()
+
+
+#   The error you're seeing (ImportError: If this fails your Python may not be configured for Tk)
+# suggests that the tkinter library, which is typically used for building GUIs in Python, is either not 
+# installed or not supported in your current environment. Streamlit doesn’t natively support tkinter because 
+# it runs in a web-based environment, so the Tkinter GUI elements can't be rendered in a Streamlit app.
